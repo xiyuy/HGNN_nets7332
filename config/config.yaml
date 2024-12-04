@@ -4,7 +4,7 @@
 
 #configure feature path
 # **** please must modify the data_root before first running ****
-data_root: &d_r /home/fengyifan/data/features
+data_root: &d_r data
 modelnet40_ft: !join [*d_r, ModelNet40_mvcnn_gvcnn.mat]
 ntu2012_ft: !join [*d_r, NTU2012_mvcnn_gvcnn.mat]
 
@@ -23,6 +23,7 @@ use_gvcnn_feature_for_structure: True
 
 
 #Model
+Pi_version: 'from_P'
 #--------------------------------------------------
 # select the dataset you use, ModelNet40 or NTU2012
 on_dataset: &o_d ModelNet40
@@ -39,7 +40,7 @@ use_gvcnn_feature: True
 #Result
 # configure result path
 # **** please must modify the result_root before first running ****
-result_root: &r_r /home/fengyifan/result/hgnn
+result_root: &r_r results
 result_sub_folder: !join [*r_r, !concat [ *g_t, _, *o_d ]]
 ckpt_folder: !join [*r_r, ckpt]
 

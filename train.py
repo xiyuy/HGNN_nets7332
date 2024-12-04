@@ -4,7 +4,8 @@ import copy
 import torch
 import torch.optim as optim
 import pprint as pp
-import utils.hypergraph_utils as hgut
+# import utils.hypergraph_utils as hgut
+import utils.new_utils as hgut
 from models import HGNN
 from config import get_config
 from datasets import load_feature_construct_H
@@ -24,7 +25,7 @@ fts, lbls, idx_train, idx_test, H = \
                              use_gvcnn_feature=cfg['use_gvcnn_feature'],
                              use_mvcnn_feature_for_structure=cfg['use_mvcnn_feature_for_structure'],
                              use_gvcnn_feature_for_structure=cfg['use_gvcnn_feature_for_structure'])
-G = hgut.generate_G_from_H(H)
+G = hgut.generate_G_from_H(H, E_weights, V_weights, Pi_version=cfg['Pi_version'])
 n_class = int(lbls.max()) + 1
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
