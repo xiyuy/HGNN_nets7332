@@ -22,23 +22,17 @@ def _generate_W(H, E_weights):
     return W
 
 
-def _generate_R(H, V_weights):
-    pass
-
-
-def generate_P(H, E_weights, V_weights):
+def generate_P(H, R, E_weights):
     '''
     Calculate transition matrix P.
     :param H: hypergraph incidence matrix H (V x E).
+    :param R: edge-dependent vertex weights for each vertex (E x V).
     :param E_weights: weights for each hyperedge (1 x E).
-    :param V_weights: vertex weights for each vertex (1 x ?).
     :return: P (V x V).
     '''
     D_V = np.diag(np.count_nonzero(H, axis=1))
     D_E = np.diag(np.count_nonzero(H, axis=0))
-
     W = _generate_W(H, E_weights)
-    R = _generate_R(H, V_weights)
 
     P = LA.inv(D_V) @ W @ LA.inv(D_E) @ R
 
@@ -53,26 +47,26 @@ def generate_Pi_from_P(P):
     '''
     eigenvalues, eigenvectors = LA.eig(P)
 
-    max_index = np.argmax(np.abs(eigenvalues))
+    max_index = np.argmax(eigenvalues)
     max_eigenvector = eigenvectors[:, max_index]
-    norm_max_eigenvector = max_eigenvector / np.sum(max_eigenvector)
+    norm_max_eigenvector = np.abs(max_eigenvector) / \
+        np.sum(np.abs(max_eigenvector))
 
     Pi = np.diag(norm_max_eigenvector)
 
     return Pi
 
 
-def generate_Pi_from_A(H, E_weights, V_weights):
+def generate_Pi_from_A(H, R, E_weights):
     '''
     Calculate stationary distribution Pi from square matrix A.
     :param H: hypergraph incidence matrix H (V x E).
+    :param R: edge-dependent vertex weights for each vertex (E x V).
     :param E_weights: weights for each hyperedge (1 x E).
-    :param V_weights: vertex weights for each vertex (1 x ?).
     :return: Pi (V x V).
     '''
     D_V = np.diag(np.count_nonzero(H, axis=1))
     W = _generate_W(H, E_weights)
-    R = _generate_R(H, V_weights)
     A = W.T @ LA.inv(D_V) @ R.T
 
     eigenvalues, eigenvectors = LA.eig(A)
@@ -86,19 +80,19 @@ def generate_Pi_from_A(H, E_weights, V_weights):
     return Pi
 
 
-def generate_G_from_H(H, E_weights, V_weights, Pi_version='from_P'):
+def generate_G_from_H(H, R, E_weights, Pi_version='from_P'):
     '''
     Calculate spectral convolution G from hypergraph incidence matrix H.
     :param H: hypergraph incidence matrix H (V x E).
+    :param R: edge-dependent vertex weights for each vertex (E x V).
     :param E_weights: weights for each hyperedge (1 x E).
-    :param V_weights: vertex weights for each vertex (1 x ?).
     :return: G (V x V).
     '''
-    P = generate_P(H, E_weights, V_weights)
+    P = generate_P(H, R, E_weights)
     if Pi_version == 'from_P':
         Pi = generate_Pi_from_P(P)
     elif Pi_version == 'from_A':
-        Pi = generate_Pi_from_A(H, E_weights, V_weights)
+        Pi = generate_Pi_from_A(H, R, E_weights)
 
     G = Pi - (Pi @ P + P.T @ Pi) / 2
 
