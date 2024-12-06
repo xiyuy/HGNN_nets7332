@@ -8,30 +8,34 @@ import pprint as pp
 import utils.new_utils as hgut
 from models import HGNN
 from config import get_config
-from datasets import load_feature_construct_H
+# from datasets import load_feature_construct_H
+from datasets.new_data_helper import load_feature_construct_H_and_R
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 cfg = get_config('config/config.yaml')
 
 # initialize data
-data_dir = cfg['modelnet40_ft'] if cfg['on_dataset'] == 'ModelNet40' \
-    else cfg['ntu2012_ft']
-fts, lbls, idx_train, idx_test, H = \
-    load_feature_construct_H(data_dir,
-                             m_prob=cfg['m_prob'],
-                             K_neigs=cfg['K_neigs'],
-                             is_probH=cfg['is_probH'],
-                             use_mvcnn_feature=cfg['use_mvcnn_feature'],
-                             use_gvcnn_feature=cfg['use_gvcnn_feature'],
-                             use_mvcnn_feature_for_structure=cfg['use_mvcnn_feature_for_structure'],
-                             use_gvcnn_feature_for_structure=cfg['use_gvcnn_feature_for_structure'])
-G = hgut.generate_G_from_H(H, E_weights, V_weights, Pi_version=cfg['Pi_version'])
-n_class = int(lbls.max()) + 1
+# data_dir = cfg['modelnet40_ft'] if cfg['on_dataset'] == 'ModelNet40' \
+#     else cfg['ntu2012_ft']
+# fts, lbls, idx_train, idx_test, H = \
+#     load_feature_construct_H(data_dir,
+#                              m_prob=cfg['m_prob'],
+#                              K_neigs=cfg['K_neigs'],
+#                              is_probH=cfg['is_probH'],
+#                              use_mvcnn_feature=cfg['use_mvcnn_feature'],
+#                              use_gvcnn_feature=cfg['use_gvcnn_feature'],
+#                              use_mvcnn_feature_for_structure=cfg['use_mvcnn_feature_for_structure'],
+#                              use_gvcnn_feature_for_structure=cfg['use_gvcnn_feature_for_structure'])
+data_dir = cfg['data_root']
+H, R, E_weights, X, Y, idx_train, idx_test = \
+    load_feature_construct_H_and_R(data_dir)
+G = hgut.generate_G_from_H(H, R, E_weights, Pi_version=cfg['Pi_version'])
+n_class = int(Y.max() + 1)
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # transform data to device
-fts = torch.Tensor(fts).to(device)
-lbls = torch.Tensor(lbls).squeeze().long().to(device)
+fts = torch.Tensor(X).to(device)
+lbls = torch.Tensor(Y).squeeze().long().to(device)
 G = torch.Tensor(G).to(device)
 idx_train = torch.Tensor(idx_train).long().to(device)
 idx_test = torch.Tensor(idx_test).long().to(device)
@@ -102,14 +106,16 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25, print_fre
 
 
 def _main():
-    print(f"Classification on {cfg['on_dataset']} dataset!!! class number: {n_class}")
-    print(f"use MVCNN feature: {cfg['use_mvcnn_feature']}")
-    print(f"use GVCNN feature: {cfg['use_gvcnn_feature']}")
-    print(f"use MVCNN feature for structure: {cfg['use_mvcnn_feature_for_structure']}")
-    print(f"use GVCNN feature for structure: {cfg['use_gvcnn_feature_for_structure']}")
-    print('Configuration -> Start')
-    pp.pprint(cfg)
-    print('Configuration -> End')
+    print('Class number:', n_class)
+    print('Start training...')
+    # print(f"Classification on {cfg['on_dataset']} dataset!!! class number: {n_class}")
+    # print(f"use MVCNN feature: {cfg['use_mvcnn_feature']}")
+    # print(f"use GVCNN feature: {cfg['use_gvcnn_feature']}")
+    # print(f"use MVCNN feature for structure: {cfg['use_mvcnn_feature_for_structure']}")
+    # print(f"use GVCNN feature for structure: {cfg['use_gvcnn_feature_for_structure']}")
+    # print('Configuration -> Start')
+    # pp.pprint(cfg)
+    # print('Configuration -> End')
 
     model_ft = HGNN(in_ch=fts.shape[1],
                     n_class=n_class,
