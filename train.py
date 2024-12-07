@@ -11,6 +11,10 @@ from config import get_config
 # from datasets import load_feature_construct_H
 from datasets.new_data_helper import load_feature_construct_H_and_R
 
+# import libraries for seeding
+import numpy as np
+import random
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 cfg = get_config('config/config.yaml')
 
@@ -29,6 +33,8 @@ cfg = get_config('config/config.yaml')
 data_dir = cfg['data_root']
 H, R, E_weights, X, Y, idx_train, idx_test = \
     load_feature_construct_H_and_R(data_dir)
+# set all vertex weights to 1.
+# R[R != 0] = 1
 G = hgut.generate_G_from_H(H, R, E_weights, Pi_version=cfg['Pi_version'])
 n_class = int(Y.max() + 1)
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -41,8 +47,19 @@ idx_train = torch.Tensor(idx_train).long().to(device)
 idx_test = torch.Tensor(idx_test).long().to(device)
 
 
-def train_model(model, criterion, optimizer, scheduler, num_epochs=25, print_freq=500):
+def train_model(model, criterion, optimizer, scheduler, num_epochs=25, print_freq=500, seed=cfg['seed']):
     since = time.time()
+
+    # set seed in training
+    # Python random seed
+    random.seed(seed)
+
+    # NumPy random seed
+    np.random.seed(seed)
+
+    # PyTorch random seed
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)  # If you're using CUDA
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
@@ -107,6 +124,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25, print_fre
 
 def _main():
     print('Class number:', n_class)
+    print('Pi matrix version:', cfg['Pi_version'])
     print('Start training...')
     # print(f"Classification on {cfg['on_dataset']} dataset!!! class number: {n_class}")
     # print(f"use MVCNN feature: {cfg['use_mvcnn_feature']}")
@@ -116,7 +134,7 @@ def _main():
     # print('Configuration -> Start')
     # pp.pprint(cfg)
     # print('Configuration -> End')
-
+    
     model_ft = HGNN(in_ch=fts.shape[1],
                     n_class=n_class,
                     n_hid=cfg['n_hid'],
