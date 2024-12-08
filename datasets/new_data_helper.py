@@ -9,36 +9,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 
-# Define a function to extract author IDs
-def extract_author_ids(authors):
-    try:
-        # Safely evaluate the string as a Python object if it's stored as a string
-        if isinstance(authors, str):
-            authors = ast.literal_eval(authors)
-        # Extract 'id' values from the list of dictionaries
-        return [author['id'] for author in authors if 'id' in author]
-    except (ValueError, SyntaxError, TypeError):
-        return []
-
-
-# Function to check if a row's author_ids is a subset of new_aid
-def is_subset(row_list, valid_list):
-    try:
-        return set(row_list).issubset(valid_list)
-    except TypeError:
-        return False  # Return False if the row_list is not iterable
-
-
-# Function to create the list of 2s and 1s
-def generate_2s_and_1s(author_ids):
-    """Generate a list with the first and last value as 2, and the rest as 1s."""
-    n = len(author_ids)
-    if n == 0:
-        return []  # Handle cases where there are no authors
-    return [2] + [1] * (n - 2) + [2] if n > 1 else [2]
-
-
-# Function to create the weight array
+    ### Function to create the weight array
 def create_author_dict_values(author_ids, unique_author_ids):
     """
     Create a dictionary with all unique author IDs initialized to 0,
@@ -70,11 +41,33 @@ def create_author_dict_values(author_ids, unique_author_ids):
     # Return the values of the dictionary as a list
     return list(author_dict.values())
 
+def extract_author_ids(authors):
+    try:
+        # Safely evaluate the string as a Python object if it's stored as a string
+        if isinstance(authors, str):
+            authors = ast.literal_eval(authors)
+        # Extract 'id' values from the list of dictionaries
+        return [author['id'] for author in authors if 'id' in author]
+    except (ValueError, SyntaxError, TypeError):
+        return []
+    
+# Function to check if a row's author_ids is a subset of new_aid
+def is_subset(row_list, valid_list):
+    try:
+        return set(row_list).issubset(valid_list)
+    except TypeError:
+        return False  # Return False if the row_list is not iterable
+    
+# Function to create the list of 2s and 1s
+def generate_2s_and_1s(author_ids):
+    """Generate a list with the first and last value as 2, and the rest as 1s."""
+    n = len(author_ids)
+    if n == 0:
+        return []  # Handle cases where there are no authors
+    return [2] + [1] * (n - 2) + [2] if n > 1 else [2]
 
-def pre_process_hyp_papers(data_dir):
-    hyp_papers = pd.read_csv(os.path.join(data_dir, 'hypergraph_papers.csv'))
-    hyp_authors = pd.read_csv(os.path.join(data_dir, 'hypergraph_authors_with_labels.csv'))
-
+def pre_process_hyp_papers(hyp_papers, hyp_authors):
+    # Define a function to extract author IDs
     # Extract relevant columns: 'id' for paper IDs and 'authors' for author information
     papers = hyp_papers[['id', 'authors', 'n_citation']]
     papers = papers[papers['authors'].notna() & papers['n_citation'].notna() & (papers['n_citation'] != 'n_citation')]
@@ -93,18 +86,20 @@ def pre_process_hyp_papers(data_dir):
     new_aid = hyp_authors_no_null[hyp_authors_no_null['id'].isin(unique_author_ids)].dropna().id.unique().tolist() # Only including authors who appear in the papers
     new_aid = set(new_aid)  # Convert to set for efficient subset checking
 
+
     # Apply filter to extract papers by these authors only
     paper_author_df = papers[papers['author_ids'].apply(lambda x: is_subset(x, new_aid))]
     print("Paper author dataframe dimensions: ", paper_author_df.shape)
 
-    # Create the author weight matrix
+    ### Create the author weight matrix
+
     # Add a new column with the generated list
     paper_author_df['author_weights'] = paper_author_df['author_ids'].apply(generate_2s_and_1s)
 
     # Filter the dataframe to exclude rows where 'author_ids' has only one element
     paper_author_df = paper_author_df[paper_author_df['author_ids'].apply(lambda x: len(x) > 1 if isinstance(x, list) else False)]
     
-    # Display the resulting DataFrame
+    # # Display the resulting DataFrame
     # display(paper_author_df.head())
 
     # Recreate the unique paper IDs mapping
@@ -123,10 +118,12 @@ def pre_process_hyp_papers(data_dir):
     # Convert the 'author_weights' column to a 2D NumPy array (matrix)
     author_weights_matrix_R = np.vstack(paper_author_df['author_weight_array'].values)
 
+
     # Display the shape of the matrix for confirmation
     print("R matrix shape:", author_weights_matrix_R.shape)
 
-    # Create the incidence matrix
+    ### Create the incidence matrix
+    
     # Replace all values > 0 with 1
     binary_matrix = np.where(author_weights_matrix_R > 0, 1, 0)
 
