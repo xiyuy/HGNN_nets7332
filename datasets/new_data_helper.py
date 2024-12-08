@@ -5,6 +5,9 @@ import networkx as nx
 import numpy as np
 import ast
 
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+
 
 # Define a function to extract author IDs
 def extract_author_ids(authors):
@@ -189,25 +192,49 @@ def process_tags_column(authors_df):
     return authors_df, unique_t_dict
 
 
-def load_feature_construct_H_and_R(data_dir, test_size=0.2):
+def load_feature_construct_H_and_R(data_dir, test_perc=0.2, seed=42):
+    np.random.seed(seed)
+
     df, authors_df, H, R = pre_process_hyp_papers(data_dir)
     E_weights = df['n_citation'].values + 1
 
-    # create feature matrix and class label vector
+    # create feature matrix and class labels
     new_authors_df, unique_t_dict = process_tags_column(authors_df)
+
+    # Version 1: X is the original node features
     X = np.vstack(new_authors_df['features'].values)
+
+    # Version 2: X is the placeholder features (all ones)
+    # X = np.ones((new_authors_df.shape[0], 1))
+
+    # Version 3: X is the PCA-transformed features
+    # # Standardize the data
+    # scaler = StandardScaler()
+    # X_scaled = scaler.fit_transform(X)
+
+    # # Create a PCA object with the desired number of components
+    # pca = PCA(n_components=1024)
+
+    # # Fit the PCA model to the data
+    # pca.fit(X_scaled)
+
+    # # Transform the data to the lower-dimensional space
+    # X_pca = pca.transform(X_scaled)
 
     new_authors_df['Class_Label'] = 0  # All department except the three below will be in class 0
     new_authors_df.loc[new_authors_df.department == 'Compter Science', 'Class_Label'] = 1
     new_authors_df.loc[new_authors_df.department == 'Engineering', 'Class_Label'] = 2
     new_authors_df.loc[new_authors_df.department == 'Mathematics', 'Class_Label'] = 3
-    new_authors_df.Class_Label.value_counts()
+    print("Class labels:")
+    print(new_authors_df.Class_Label.value_counts())
     Y = np.vstack(new_authors_df['Class_Label'].values)
 
     # create train-test split
     num_nodes = X.shape[0]
-    idx = np.concatenate((np.repeat(0, num_nodes*test_size),
-                          np.repeat(1, num_nodes*(1-test_size))))
+    test_size = int(num_nodes*test_perc)
+    train_size = int(num_nodes - test_size)
+    idx = np.concatenate((np.repeat(0, test_size),
+                          np.repeat(1, train_size)))
     np.random.shuffle(idx)
     idx_train = np.where(idx == 1)[0]
     idx_test = np.where(idx == 0)[0]

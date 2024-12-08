@@ -46,6 +46,7 @@ ckpt_folder: !join [*r_r, ckpt]
 
 
 #Train
+seed: 0
 max_epoch: 600
 n_hid: 128
 lr: 0.001
