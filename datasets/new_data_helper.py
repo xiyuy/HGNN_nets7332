@@ -66,7 +66,11 @@ def generate_2s_and_1s(author_ids):
         return []  # Handle cases where there are no authors
     return [2] + [1] * (n - 2) + [2] if n > 1 else [2]
 
-def pre_process_hyp_papers(hyp_papers, hyp_authors):
+def pre_process_hyp_papers(data_dir):
+    # Load the dataset
+    hyp_papers = pd.read_csv(os.path.join(data_dir, 'hypergraph_papers.csv'))
+    hyp_authors = pd.read_csv(os.path.join(data_dir, 'hypergraph_authors_with_labels.csv'))
+
     # Define a function to extract author IDs
     # Extract relevant columns: 'id' for paper IDs and 'authors' for author information
     papers = hyp_papers[['id', 'authors', 'n_citation']]
@@ -194,6 +198,11 @@ def load_feature_construct_H_and_R(data_dir, test_perc=0.2, seed=42):
 
     df, authors_df, H, R = pre_process_hyp_papers(data_dir)
     E_weights = df['n_citation'].values + 1
+
+    print('R Matrix:')
+    print(R[R > 0])
+    print('E_weights:')
+    print(E_weights[E_weights > 0])
 
     # create feature matrix and class labels
     new_authors_df, unique_t_dict = process_tags_column(authors_df)
