@@ -118,12 +118,10 @@ def pre_process_hyp_papers(hyp_papers, hyp_authors):
     # Convert the 'author_weights' column to a 2D NumPy array (matrix)
     author_weights_matrix_R = np.vstack(paper_author_df['author_weight_array'].values)
 
-
     # Display the shape of the matrix for confirmation
     print("R matrix shape:", author_weights_matrix_R.shape)
 
     ### Create the incidence matrix
-    
     # Replace all values > 0 with 1
     binary_matrix = np.where(author_weights_matrix_R > 0, 1, 0)
 
@@ -165,9 +163,6 @@ def process_tags_column(authors_df):
     unique_t_dict = {t: 0 for t in unique_t_set}
 
     # Display the resulting dictionary
-    # print("Unique 't' Dictionary:")
-    # print(unique_t_dict)
-
     unique_t_list = list(unique_t_dict.keys())  # To maintain order
     t_index_map = {t: idx for idx, t in enumerate(unique_t_list)}  # Map 't' to indices for the array
 
