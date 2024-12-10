@@ -2,7 +2,6 @@ import os
 import yaml
 import os.path as osp
 
-
 def get_config(dir='config/config.yaml'):
     # add direction join function when parse the yaml file
     def join(loader, node):
@@ -20,12 +19,8 @@ def get_config(dir='config/config.yaml'):
     with open(dir, 'r') as f:
         # cfg = yaml.load(f)
         cfg = yaml.load(f, Loader=yaml.FullLoader)
-
-
     check_dirs(cfg)
-
     return cfg
-
 
 def check_dir(folder, mk_dir=True):
     if not osp.exists(folder):
@@ -38,7 +33,6 @@ def check_dir(folder, mk_dir=True):
 
 def check_dirs(cfg):
     check_dir(cfg['data_root'], mk_dir=False)
-
     check_dir(cfg['result_root'])
     check_dir(cfg['ckpt_folder'])
     check_dir(cfg['result_sub_folder'])
