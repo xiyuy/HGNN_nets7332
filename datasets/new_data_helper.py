@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 
-    ### Function to create the weight array
+### Function to create the weight array
 def create_author_dict_values(author_ids, unique_author_ids):
     """
     Create a dictionary with all unique author IDs initialized to 0,
@@ -30,6 +30,7 @@ def create_author_dict_values(author_ids, unique_author_ids):
         return list(author_dict.values())  # Return all zeros if author_ids is invalid
 
     # Update values for IDs present in the author_ids list
+    
     for i, author_id in enumerate(author_ids):
         if author_id in author_dict:
             # First and last author gets value 2
@@ -66,10 +67,7 @@ def generate_2s_and_1s(author_ids):
         return []  # Handle cases where there are no authors
     return [2] + [1] * (n - 2) + [2] if n > 1 else [2]
 
-def pre_process_hyp_papers(data_dir):
-    # Load the dataset
-    hyp_papers = pd.read_csv(os.path.join(data_dir, 'hypergraph_papers.csv'))
-    hyp_authors = pd.read_csv(os.path.join(data_dir, 'hypergraph_authors_with_labels.csv'))
+def pre_process_hyp_papers(hyp_papers, hyp_authors):
 
     # Define a function to extract author IDs
     # Extract relevant columns: 'id' for paper IDs and 'authors' for author information
@@ -79,20 +77,19 @@ def pre_process_hyp_papers(data_dir):
 
     # Log the citation numbers
     papers['n_citation'] = np.log(papers['n_citation'].astype(float) + 1) # add one to all citations because we want to put a weight of 1 for uncited paper and thus keep the hyperedge
-    
+
     # Create a mapping of unique author IDs to array indices
     unique_author_ids = list(set(author_id for author_list in papers['author_ids'] for author_id in author_list if author_id is not None))
-    author_id_to_index = {author_id: index for index, author_id in enumerate(unique_author_ids)}
+    # author_id_to_index = {author_id: index for index, author_id in enumerate(unique_author_ids)}
 
     # Apply filter on authors
     hyp_authors_no_null = hyp_authors[hyp_authors['tags'].notna() & hyp_authors['department'].notna()]
 
-    new_aid = hyp_authors_no_null[hyp_authors_no_null['id'].isin(unique_author_ids)].dropna().id.unique().tolist() # Only including authors who appear in the papers
-    new_aid = set(new_aid)  # Convert to set for efficient subset checking
-
+    author_id_no_null = hyp_authors_no_null[hyp_authors_no_null['id'].isin(unique_author_ids)].dropna().id.unique().tolist() # Only including authors who appear in the papers
+    author_id_no_null = set(author_id_no_null)  # Convert to set for efficient subset checking
 
     # Apply filter to extract papers by these authors only
-    paper_author_df = papers[papers['author_ids'].apply(lambda x: is_subset(x, new_aid))]
+    paper_author_df = papers[papers['author_ids'].apply(lambda x: is_subset(x, author_id_no_null))]
     print("Paper author dataframe dimensions: ", paper_author_df.shape)
 
     ### Create the author weight matrix
@@ -103,18 +100,17 @@ def pre_process_hyp_papers(data_dir):
     # Filter the dataframe to exclude rows where 'author_ids' has only one element
     paper_author_df = paper_author_df[paper_author_df['author_ids'].apply(lambda x: len(x) > 1 if isinstance(x, list) else False)]
     
-    # # Display the resulting DataFrame
-    # display(paper_author_df.head())
+    # Display the resulting DataFrame
 
     # Recreate the unique paper IDs mapping
     unique_paper_ids = list(paper_author_df['id'])  # Ensure we have a list of unique paper IDs
-    paper_id_to_index = {paper_id: index for index, paper_id in enumerate(unique_paper_ids)}
+    # paper_id_to_index = {paper_id: index for index, paper_id in enumerate(unique_paper_ids)}
     print("Number of papers: ", len(unique_paper_ids))
 
     # Recreate the unique author IDs mapping
-    unique_author_ids = list(set(author_id for author_list in paper_author_df['author_ids'] for author_id in author_list if author_id is not None))
-    author_id_to_index = {author_id: index for index, author_id in enumerate(unique_author_ids)}
+    unique_author_ids = sorted(list(set(author_id for author_list in paper_author_df['author_ids'] for author_id in author_list if author_id is not None)))
     print("Number of authors: ", len(unique_author_ids))
+    print("unique author ids:", unique_author_ids)
 
     # Apply the function to create the new column with lists of values
     paper_author_df['author_weight_array'] = paper_author_df['author_ids'].apply(lambda x: create_author_dict_values(x, unique_author_ids))
@@ -139,7 +135,6 @@ def pre_process_hyp_papers(data_dir):
     filtered_authors = hyp_authors_no_null[hyp_authors_no_null['id'].isin(unique_author_ids)]
 
     return paper_author_df, filtered_authors, paper_author_matrix_H, author_weights_matrix_R
-
 
 def process_tags_column(authors_df):
     """
