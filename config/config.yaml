@@ -1,14 +1,13 @@
-#------------------------------------------------------------------#
-# must check the direction of data_root and result_root before run #
-#------------------------------------------------------------------#
-
+#-----------------------------------------------------------------
+#
+# must check the direction of data_root and result_root before run 
+#-----------------------------------------------------------------
+#
 #configure feature path
 # **** please must modify the data_root before first running ****
-data_root: &d_r data
+data_root: &d_r data/AMiner
 modelnet40_ft: !join [*d_r, ModelNet40_mvcnn_gvcnn.mat]
 ntu2012_ft: !join [*d_r, NTU2012_mvcnn_gvcnn.mat]
-
-
 #Hypergraph
 graph_type: &g_t hypergraph
 K_neigs: [10]
@@ -20,37 +19,43 @@ is_probH: True
 use_mvcnn_feature_for_structure: True
 use_gvcnn_feature_for_structure: True
 #---------------------------------------
-
-
 #Model
-Pi_version: 'from_P'
+Pi_version: 'from_P' # Options: 'from_P' or 'from_A'
 #--------------------------------------------------
-# select the dataset you use, ModelNet40 or NTU2012
-on_dataset: &o_d ModelNet40
-#on_dataset: &o_d NTU2012
+# select the task you want to perform
+task_type: &t_t feature_comparison # Options: node_classification, node_ranking, ranking_comparison, feature_comparison
 #--------------------------------------------------
-
+#--------------------------------------------------
+# select the dataset you use, ModelNet40 or NTU2012 or AMiner
+on_dataset: &o_d AMiner # Options: ModelNet40, NTU2012, AMiner
+#--------------------------------------------------
 #---------------------------------------
 # change me
 use_mvcnn_feature: False
 use_gvcnn_feature: True
 #---------------------------------------
-
-
 #Result
 # configure result path
 # **** please must modify the result_root before first running ****
 result_root: &r_r results
-result_sub_folder: !join [*r_r, !concat [ *g_t, _, *o_d ]]
+result_sub_folder: !join [*r_r, !concat [ *g_t, _, *o_d, _, *t_t ]]
 ckpt_folder: !join [*r_r, ckpt]
+saved_models_folder: !join [*r_r, saved_models]
 
+#Ranking specific settings
+ranking_mode: 'mse' # Options: 'mse', 'pairwise' (if implementing pairwise ranking)
+use_edge_dependent: True # Whether to use edge-dependent vertex weights
+compare_with_baseline: True # Compare with edge-independent weights model
+save_rankings: True # Save the computed rankings to file
+use_features: True # Whether to use node features in ranking model
+compare_with_featureless: True # Compare with model without features
 
-#Train
-seed: 0
+#Train 
+seed: 42 # Updated seed for reproducibility
 max_epoch: 600
 n_hid: 128
 lr: 0.001
-milestones: [100]
+milestones: [100, 300]
 gamma: 0.9
 drop_out: 0.5
 print_freq: 50
